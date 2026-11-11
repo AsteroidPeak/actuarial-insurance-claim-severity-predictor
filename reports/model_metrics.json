@@ -1,0 +1,16 @@
+{
+  "frequency": {
+    "deviance_full": 43611.89522799372,
+    "deviance_null": 44941.9122061199,
+    "percent_deviance_reduction": 2.959413413533094,
+    "converged": true
+  },
+  "severity": {
+    "deviance_full": 9958.198752775254,
+    "deviance_null": 9114.550599366858,
+    "percent_deviance_reduction": -9.256058696596627,
+    "converged": true
+  },
+  "aggregate_predicted_losses": 1003256.0866086109,
+  "aggregate_actual_losses": 11868103.84
+}
