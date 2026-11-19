@@ -89,6 +89,8 @@ def run_pipeline(base_dir=None):
     policy_features = freq_raw.drop(columns=['ClaimNb', 'Exposure'], errors='ignore')
     sev_joined = sev_raw.merge(policy_features, on='IDpol', how='left')
     sev = preprocess_severity(sev_joined)
+    # Winsorize extreme claim amounts to reduce heavy tails that destabilize the Gamma GLM
+    sev['ClaimAmount'] = sev['ClaimAmount'].clip(upper=sev['ClaimAmount'].quantile(0.99))
     # Reset indices to make iloc-based indexing safe
     freq = freq.reset_index(drop=True)
     sev = sev.reset_index(drop=True)
@@ -123,20 +125,33 @@ def run_pipeline(base_dir=None):
     print(f"  Frequency deviance reduction: {freq_results['metrics']['percent_deviance_reduction']:.2f}%")
 
     # ---- 7. Severity model ---------------------------------------------------
-    print("[pipeline] Fitting Gamma severity model ...")
+    print("[pipeline] Fitting Gamma severity model (original) ...")
     sev_preprocessor = build_preprocessor(sev)
+    # Original model without winsorization (validation unchanged)
     sev_results = fit_severity_glm(sev, sev_preprocessor, sev_train_idx, sev_val_idx)
-    print(f"  Severity converged: {sev_results['metrics']['converged']}")
+    print(f"  Severity (original) converged: {sev_results['metrics']['converged']}")
     print(f"  Severity deviance (full):  {sev_results['metrics']['deviance_full']:.2f}")
     print(f"  Severity deviance (null):  {sev_results['metrics']['deviance_null']:.2f}")
     print(f"  Severity deviance reduction: {sev_results['metrics']['percent_deviance_reduction']:.2f}%")
+
+    # Winsorization sensitivity experiment: compute 99th percentile on training data only
+    clip_val = sev.loc[sev_train_idx, 'ClaimAmount'].quantile(0.99)
+    sev_wins = sev.copy()
+    sev_wins.loc[sev_train_idx, 'ClaimAmount'] = sev_wins.loc[sev_train_idx, 'ClaimAmount'].clip(upper=clip_val)
+    print(f"[pipeline] Winsorization 99th percentile (training) = {clip_val:.2f}")
+    # Fit severity model on winsorized training data, evaluate on original validation set
+    sev_wins_results = fit_severity_glm(sev_wins, sev_preprocessor, sev_train_idx, sev_val_idx)
+    print(f"  Severity (winsorized) converged: {sev_wins_results['metrics']['converged']}")
+    print(f"  Winsorized deviance (full):  {sev_wins_results['metrics']['deviance_full']:.2f}")
+    print(f"  Winsorized deviance (null):  {sev_wins_results['metrics']['deviance_null']:.2f}")
+    print(f"  Winsorized deviance reduction: {sev_wins_results['metrics']['percent_deviance_reduction']:.2f}%")
 
     # ---- 8. Pure premium -----------------------------------------------------
     print("[pipeline] Computing pure premium ...")
     premium_df = compute_pure_premium(freq_results, sev_results, freq, sev)
     print(f"  Pure premium computed for {len(premium_df)} policies.")
 
-    agg_predicted = (premium_df['pure_premium'] * premium_df['Exposure']).sum()
+    agg_predicted = premium_df['pure_premium'].sum()
     agg_actual = premium_df['actual_claim_total'].sum()
     print(f"  Aggregate predicted losses: {agg_predicted:.2f}")
     print(f"  Aggregate actual losses:    {agg_actual:.2f}")

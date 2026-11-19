@@ -32,18 +32,32 @@ def compute_pure_premium(freq_results, sev_results, freq_df, sev_df,
     # --- severity side ---
     sev_val = sev_df.iloc[sev_results['val_idx']].copy()
     sev_val['pred_severity'] = np.asarray(sev_results['val_predictions'])
-
-    # Average predicted severity per policy
+    # Compute average predicted severity per policy (for policies with severity records)
     sev_per_policy = sev_val.groupby('IDpol').agg(
         pred_severity=('pred_severity', 'mean'),
         actual_claim_total=('ClaimAmount', 'sum'),
     ).reset_index()
-
-    # Merge frequency and severity predictions on IDpol
+    # Identify validation policies without any severity records
+    freq_val_ids = set(freq_val['IDpol'])
+    sev_policy_ids = set(sev_per_policy['IDpol'])
+    missing_ids = freq_val_ids - sev_policy_ids
+    if missing_ids:
+        # Assign zero severity for policies with no severity records (no claim amount to predict)
+        missing_df = pd.DataFrame({
+            'IDpol': list(missing_ids),
+            'pred_severity': 0.0,
+            'actual_claim_total': 0.0,
+        })
+        sev_per_policy = pd.concat([sev_per_policy, missing_df], ignore_index=True)
+    # Merge frequency and severity predictions on IDpol (left join to keep all freq policies)
     merged = freq_val[['IDpol', exposure_col, 'ClaimNb', 'pred_frequency']].merge(
-        sev_per_policy, on='IDpol', how='inner'
+        sev_per_policy, on='IDpol', how='left'
     )
+    # Compute pure premium as predicted frequency * predicted severity
     merged['pure_premium'] = merged['pred_frequency'] * merged['pred_severity']
+    # Ensure any missing values are filled (should not occur after missing handling)
+    merged['pred_severity'].fillna(0.0, inplace=True)
+    merged['actual_claim_total'].fillna(0.0, inplace=True)
 
     return merged
 

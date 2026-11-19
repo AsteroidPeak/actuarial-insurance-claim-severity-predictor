@@ -6,11 +6,11 @@
     "converged": true
   },
   "severity": {
-    "deviance_full": 9958.198752775254,
-    "deviance_null": 9114.550599366858,
-    "percent_deviance_reduction": -9.256058696596627,
+    "deviance_full": 5617.976054739702,
+    "deviance_null": 5638.548811829784,
+    "percent_deviance_reduction": 0.3648590759189774,
     "converged": true
   },
-  "aggregate_predicted_losses": 1003256.0866086109,
-  "aggregate_actual_losses": 11868103.84
+  "aggregate_predicted_losses": 1013182.0380159466,
+  "aggregate_actual_losses": 8512891.705999998
 }
