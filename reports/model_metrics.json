@@ -5,12 +5,21 @@
     "percent_deviance_reduction": 2.959413413533094,
     "converged": true
   },
-  "severity": {
-    "deviance_full": 5617.976054739702,
-    "deviance_null": 5638.548811829784,
-    "percent_deviance_reduction": 0.3648590759189774,
+  "severity_original": {
+    "deviance_full": 9958.198752775254,
+    "deviance_null": 9114.550599366858,
+    "percent_deviance_reduction": -9.256058696596627,
     "converged": true
   },
-  "aggregate_predicted_losses": 1013182.0380159466,
-  "aggregate_actual_losses": 8512891.705999998
+  "severity_winsorized_sensitivity": {
+    "deviance_full": 9803.109118767177,
+    "deviance_null": 9805.52259978779,
+    "percent_deviance_reduction": 0.024613486900378085,
+    "converged": true
+  },
+  "winsorization_clip_value": 16252.022499999975,
+  "aggregate_predicted_losses": 15827460.662824206,
+  "aggregate_actual_losses": 11868103.84,
+  "total_validation_policies": 135603,
+  "policies_with_claims": 5101
 }

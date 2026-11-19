@@ -1,70 +1,51 @@
-"""Gamma GLM for claim severity prediction."""
-import pandas as pd
 import numpy as np
+import pandas as pd
 import statsmodels.api as sm
 
 
 def fit_severity_glm(df, preprocessor, train_idx, val_idx):
-    """Fit Gamma GLM for claim severity.
-
-    Parameters
-    ----------
-    df : DataFrame with columns IDpol, ClaimAmount, VehBrand, Area, Region, VehGas, Density
-    preprocessor : fitted ColumnTransformer (will be refit on training data)
-    train_idx : array of integer indices for training rows
-    val_idx : array of integer indices for validation rows
-
-    Returns
-    -------
-    dict with model, null_model, val_predictions, val_null_predictions, metrics,
-         preprocessor, train_idx, val_idx
-    """
     train_df = df.iloc[train_idx].copy()
-    val_df = df.iloc[val_idx].copy()
+    val_df   = df.iloc[val_idx].copy()
 
     drop_cols = ['IDpol', 'ClaimAmount']
-    # Also drop Exposure, ClaimNb, set if present
     for c in ['Exposure', 'ClaimNb', 'set']:
         if c in train_df.columns:
             drop_cols.append(c)
 
     X_train = train_df.drop(columns=drop_cols, errors='ignore')
     y_train = train_df['ClaimAmount'].values.astype(float)
-    X_val = val_df.drop(columns=drop_cols, errors='ignore')
-    y_val = val_df['ClaimAmount'].values.astype(float)
+    X_val   = val_df.drop(columns=drop_cols,   errors='ignore')
+    y_val   = val_df['ClaimAmount'].values.astype(float)
 
-    # Fit preprocessor on training data
+    # fit only on training data
     X_train_enc = preprocessor.fit_transform(X_train)
-    X_val_enc = preprocessor.transform(X_val)
+    X_val_enc   = preprocessor.transform(X_val)
 
-    # Convert sparse to dense if needed
     if hasattr(X_train_enc, 'toarray'):
         X_train_enc = X_train_enc.toarray()
     if hasattr(X_val_enc, 'toarray'):
         X_val_enc = X_val_enc.toarray()
 
-    # Add constant column for intercept
     X_train_enc = sm.add_constant(X_train_enc, has_constant='add')
-    X_val_enc = sm.add_constant(X_val_enc, has_constant='add')
+    X_val_enc   = sm.add_constant(X_val_enc,   has_constant='add')
 
-    # Gamma GLM with log link
-    gamma_model = sm.GLM(y_train, X_train_enc,
-                         family=sm.families.Gamma(link=sm.families.links.Log()))
+    # Gamma with log link keeps predictions positive and handles skewed claims
+    gamma_model   = sm.GLM(y_train, X_train_enc,
+                           family=sm.families.Gamma(link=sm.families.links.Log()))
     gamma_results = gamma_model.fit()
 
-    # Null model (intercept only)
+    # intercept-only null for deviance comparison
     null_X_train = np.ones((len(y_train), 1))
-    null_X_val = np.ones((len(y_val), 1))
-    null_model = sm.GLM(y_train, null_X_train,
-                        family=sm.families.Gamma(link=sm.families.links.Log()))
+    null_X_val   = np.ones((len(y_val),   1))
+    null_model   = sm.GLM(y_train, null_X_train,
+                          family=sm.families.Gamma(link=sm.families.links.Log()))
     null_results = null_model.fit()
 
-    # Predictions on validation
-    pred_sev = gamma_results.predict(X_val_enc)
+    pred_sev  = gamma_results.predict(X_val_enc)
     null_pred = null_results.predict(null_X_val)
 
     def gamma_deviance(y, mu):
-        y = np.asarray(y, dtype=float)
+        y  = np.asarray(y,  dtype=float)
         mu = np.asarray(mu, dtype=float)
         return 2.0 * np.sum(-np.log(y / mu) + (y - mu) / mu)
 
@@ -91,4 +72,3 @@ def fit_severity_glm(df, preprocessor, train_idx, val_idx):
         'train_idx': train_idx,
         'val_idx': val_idx,
     }
-
