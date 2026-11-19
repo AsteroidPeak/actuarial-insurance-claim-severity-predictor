@@ -113,11 +113,13 @@ $$\text{Pure Premium} = \frac{\hat{\mu}_{\text{freq}}}{\text{Exposure}} \times \
 
 | Metric | Value |
 |--------|-------|
-| Policies with pure premium computed | 5,101 |
-| Aggregate predicted losses | €1,003,256 |
-| Aggregate actual losses | €11,868,104 |
+| Policies with pure premium computed | 135,603 |
+| Aggregate predicted losses | €1,013,182 |
+| Aggregate actual losses | €8,512,892 |
 
-The large gap between predicted and actual aggregate losses reflects: (1) pure premium is computed only for policies that appear in **both** validation sets (frequency and severity), and (2) the severity model's lack of discriminatory power.
+The gap between predicted and actual aggregate losses reflects the limited predictive power of the severity model and the inherent variability of claim amounts. Pure premium is now computed for the full set of validation policies, ensuring a consistent comparison.
+
+**Note:** Pure premium is calculated as `(predicted claim count / Exposure) * predicted severity` per policy, and aggregated directly without an additional exposure multiplication.
 
 ## Model Comparison
 
