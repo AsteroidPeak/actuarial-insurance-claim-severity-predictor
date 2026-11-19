@@ -136,13 +136,16 @@ This marginal improvement (+0.02%) confirms the lack of predictive signal rather
 | Policies with at least one claim | 5,101 |
 | Total actual claim records (val set) | 5,400 |
 | Aggregate predicted losses | €15,827,461 |
-| Aggregate actual losses | €11,868,104 |
+| Aggregate actual losses (from matched severity records) | €11,868,104 |
 | Predicted / actual loss ratio | 1.334 |
 | Average predicted severity (all val policies) | €2,119.12 |
-| Average actual severity (claimants only) | €2,326.62 |
+| Average actual claim amount (per claim record, 5,400 records) | €2,197.80 |
+| Average aggregate loss per claimant policy (5,101 policies) | €2,326.62 |
+
+> **Note on actual losses:** The €11,868,104 figure is the sum of claim amounts from severity records that could be matched to frequency-validation policies. Due to the documented discrepancy between `sum(ClaimNb) = 36,102` and available severity records `26,639`, this does not represent every actual insurance loss in the original portfolio.
 
 #### Reconciliation of earlier figures
-- **€11.87M** (earlier "actual"): this is the correct figure — sum of all severity records belonging to the frequency-validation policy IDs.
+- **€11.87M** (aggregate actual): sum of all available severity records matched to the frequency-validation policy IDs.
 - **€8.51M** (interim figure): arose from an earlier bug where severity records were aggregated *before* filtering to the frequency-validation population. Now fixed.
 - **€1.003M** (older predicted figure): arose because pure premium was computed only for the 5,101 intersection policies instead of all 135,603 validation policies.
 
